@@ -41,6 +41,7 @@ def heuristic(board,player):
      This means pieces will be counted multiple times if they appear in multiple 
      sets which are only occupied by that player.
     '''
+    # window count checks if there's none of the other player's tokens in the window
     score = 0
     # Horozontal -
     for i in range(len(board)):
@@ -52,7 +53,7 @@ def heuristic(board,player):
     for i in range(len(board)-3):
         for j in range(len(board[0])):
             window = [board[i+k][j] for k in range(4)]
-            if window.count(player) + window.count("O") == 4:
+            if window.count(player) + window.count("O") == 4: 
                 score += window.count(player)
     # Diagonal /
     for i in range(len(board)-3):
@@ -74,7 +75,7 @@ def playMove(board, player, move):
             board[i][move] = player
             return board
 
-def depthLimitedMinMax(maxDepth, turn, board):
+def depthLimitedMinMax(maxDepth, turn, board, ):
     '''
     This algorithm uses depth-first minmax search out to a specified  maximum depth to 
     select a move. You should test each node to see whether it is a terminal state (i.e., a 
@@ -90,6 +91,22 @@ def depthLimitedMinMax(maxDepth, turn, board):
     immediate next moves from the root (with Null for illegal moves) and the final move 
     selected. Example in Instructions.pdf
     '''
+    scores=[0]
+    for col in range(len(board[0])):
+        temp_board = playMove(board, turn, col)
+        if temp_board: # check if it's a legal move
+            if isTerminal(temp_board) == [True, turn]:
+                return float('inf'), col
+            if maxDepth == 1:
+                scores.append(heuristic(temp_board, turn))
+            else:
+                score,index = depthLimitedMinMax(maxDepth-1, turn, temp_board)
+                scores.append(score)
+    if len(scores) == 0:
+        return None
+    if maxDepth % 2 == 0:
+        return scores.index(max(scores))
+    return scores.index(min(scores))
 
 def pureMonteCarloGameSearch(parameter, turn, board):
     '''
@@ -132,9 +149,10 @@ def injestTestFile(input_file):
     with open(input_file, 'r') as f:
         content = f.readlines()
         algorithm = content[0].strip().upper()
-        parameter = content[1].strip()
+        parameter = int(content[1].strip())
         turn = content[2].strip()
         board = [line.strip() for line in content[3:]]
+        board = [line.split() for line in board]
     return algorithm, parameter, turn, board
 
 if __name__ == "__main__":
