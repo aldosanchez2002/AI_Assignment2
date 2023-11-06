@@ -21,7 +21,8 @@ def isTerminal(board):
     for i in range(len(board)-3):
         for j in range(3, len(board[0])):
             if board[i][j] == board[i+1][j-1] == board[i+2][j-2] == board[i+3][j-3] != 'O':
-                return True, board[i][j]        
+                return True, board[i][j]  
+    return False, None      
 
 def heuristic(board,player):
     '''
@@ -59,9 +60,11 @@ def heuristic(board,player):
     return score
 
 def playMove(board, player, move):
+    if not move:
+        return
     for i in range(len(board)-1, -1, -1):
         if board[i][move] == 'O':
-            board[i] = board[i][:move]+player+board[i][move+1:]
+            board[i] = board[i][:move]+[player]+board[i][move+1:]
             return board
 
 def flipPlayer(player):
@@ -84,9 +87,13 @@ def uniformRandom(parameter, turn, board, print_mode="VERBOSE"):
     np.random.shuffle(possible_moves)
     if print_mode in ["VERBOSE"]:
         print(f"Move Randomly Selected: {possible_moves[0]}")
-    return possible_moves[0]
+    if possible_moves:
+        return possible_moves[0]
 
 def depthLimitedMinMax(maxDepth, turn, board, print_mode="VERBOSE"):
+    return depthLimitedMinMaxAux(maxDepth, turn, board, print_mode)[1]
+
+def depthLimitedMinMaxAux(maxDepth, turn, board, print_mode="VERBOSE"):
     '''
     This algorithm uses depth-first minmax search out to a specified  maximum depth to 
     select a move. You should test each node to see whether it is a terminal state (i.e., a 
@@ -135,7 +142,7 @@ def pureMonteCarloGameSearch(parameter, turn, board, print_mode="VERBOSE"):
     NODE VALUE: X” where X is -1, 0, or 1. Then print the updated values. Example in 
     Instructions.pdf
     '''
-    pass
+    return uniformRandom(parameter, turn, board, print_mode)
 
 def upperConfidenceBound(parameter, turn, board, print_mode="VERBOSE"):
     '''
@@ -152,7 +159,7 @@ def upperConfidenceBound(parameter, turn, board, print_mode="VERBOSE"):
     equation, but the direct estimate of the node value (i.e., just wi/ni). Example in 
     Instructions.pdf
     '''
-    pass
+    return uniformRandom(parameter, turn, board, print_mode)
 
 def injestTestFile(input_file):
     with open(input_file, 'r') as f:
