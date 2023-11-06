@@ -68,6 +68,12 @@ def heuristic(board,player):
                 score += window.count(player)
     return score
 
+def playMove(board, player, move):
+    for i in range(len(board)-1, -1, -1):
+        if board[i][move] == 'O':
+            board[i][move] = player
+            return board
+
 def depthLimitedMinMax(maxDepth, turn, board):
     '''
     This algorithm uses depth-first minmax search out to a specified  maximum depth to 
@@ -84,7 +90,6 @@ def depthLimitedMinMax(maxDepth, turn, board):
     immediate next moves from the root (with Null for illegal moves) and the final move 
     selected. Example in Instructions.pdf
     '''
-    pass
 
 def pureMonteCarloGameSearch(parameter, turn, board):
     '''
