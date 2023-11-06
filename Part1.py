@@ -1,23 +1,6 @@
 import sys
 import numpy as np
 
-def uniformRandom(parameter, turn, board, print_mode="VERBOSE"):
-    '''
-    This is a trivial algorithm used for basic testing and benchmarking. It selects a legal 
-    move for the specified player using the uniform random strategy (i.e., each legal 
-    move is selected with the same probability. The parameter value should always be 0 
-    for this algorithm. 
-    '''
-    if print_mode in ["VERBOSE","BRIEF"]:
-        print("Uniform Random Algorithm")
-    possible_moves = [i for i in range(len(board[0])) if board[0][i] == 'O']
-    if print_mode in ["VERBOSE"]:
-        print(f"Possible Moves: {possible_moves}")
-    np.random.shuffle(possible_moves)
-    if print_mode in ["VERBOSE"]:
-        print(f"Move Randomly Selected: {possible_moves[0]}")
-    return possible_moves[0]
-
 def isTerminal(board):
     # Horozontal -
     for i in range(len(board)):
@@ -85,6 +68,23 @@ def flipPlayer(player):
     if player == 'Y':
         return 'R'
     return 'Y'
+
+def uniformRandom(parameter, turn, board, print_mode="VERBOSE"):
+    '''
+    This is a trivial algorithm used for basic testing and benchmarking. It selects a legal 
+    move for the specified player using the uniform random strategy (i.e., each legal 
+    move is selected with the same probability. The parameter value should always be 0 
+    for this algorithm. 
+    '''
+    if print_mode in ["VERBOSE","BRIEF"]:
+        print("Uniform Random Algorithm")
+    possible_moves = [i for i in range(len(board[0])) if board[0][i] == 'O']
+    if print_mode in ["VERBOSE"]:
+        print(f"Possible Moves: {possible_moves}")
+    np.random.shuffle(possible_moves)
+    if print_mode in ["VERBOSE"]:
+        print(f"Move Randomly Selected: {possible_moves[0]}")
+    return possible_moves[0]
 
 def depthLimitedMinMax(maxDepth, turn, board, print_mode="VERBOSE"):
     '''
