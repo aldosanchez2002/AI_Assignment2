@@ -12,7 +12,29 @@ def uniformRandom(parameter, turn, board):
     np.random.shuffle(possible_moves)
     return possible_moves[0]
 
-def depthLimitedMinMax(parameter, turn, board):
+def isTerminal(board):
+    # Horozontal -
+    for i in range(len(board)):
+        for j in range(len(board[0])-3):
+            if board[i][j] == board[i][j+1] == board[i][j+2] == board[i][j+3] != 'O':
+                return True, board[i][j]
+    # Vertical |
+    for i in range(len(board)-3):
+        for j in range(len(board[0])):
+            if board[i][j] == board[i+1][j] == board[i+2][j] == board[i+3][j] != 'O':
+                return True, board[i][j]
+    # Diagonal /
+    for i in range(len(board)-3):
+        for j in range(len(board[0])-3):
+            if board[i][j] == board[i+1][j+1] == board[i+2][j+2] == board[i+3][j+3] != 'O':
+                return True, board[i][j]
+    # Diagonal \
+    for i in range(len(board)-3):
+        for j in range(3, len(board[0])):
+            if board[i][j] == board[i+1][j-1] == board[i+2][j-2] == board[i+3][j-3] != 'O':
+                return True, board[i][j]        
+
+def depthLimitedMinMax(maxDepth, turn, board):
     '''
     This algorithm uses depth-first minmax search out to a specified  maximum depth to 
     select a move. You should test each node to see whether it is a terminal state (i.e., a 
@@ -78,30 +100,33 @@ def injestTestFile(input_file):
 
 if __name__ == "__main__":
 
-    #input file
-    if len(sys.argv) < 2:
-        print("Usage: python3 Part1.py <input_file>")
-        sys.exit(1)
-    input_file = sys.argv[1]
-    if not input_file.endswith(".txt"):
-        print("Invalid file type")
-        sys.exit(1)
-    try:
-        f = open(input_file, 'r')
-        f.close()
-    except:
-        print("Invalid file path")
-        sys.exit(1)
-
-    #print mode
-    print_mode = "VERBOSE"
-    if len(sys.argv) == 3:
-        print_mode = sys.argv[2].upper()
-        if print_mode not in ['VERBOSE', 'BRIEF', 'NONE']:
-            print("Invalid print mode")
+    def input_file():
+        if len(sys.argv) < 2:
+            print("Usage: python3 Part1.py <input_file>")
             sys.exit(1)
-    
+        input_file = sys.argv[1]
+        if not input_file.endswith(".txt"):
+            print("Invalid file type")
+            sys.exit(1)
+        try:
+            f = open(input_file, 'r')
+            f.close()
+        except:
+            print("Invalid file path")
+            sys.exit(1)
+        return input_file
 
+    def print_mode():
+        print_mode = "VERBOSE"
+        if len(sys.argv) == 3:
+            print_mode = sys.argv[2].upper()
+            if print_mode not in ['VERBOSE', 'BRIEF', 'NONE']:
+                print("Invalid print mode")
+                sys.exit(1)
+        return print_mode
+    
+    input_file = input_file()
+    print_mode = print_mode()
     algorithm, parameter, turn, board = injestTestFile(input_file)
 
     if algorithm == "UR":
