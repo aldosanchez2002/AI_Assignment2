@@ -1,15 +1,21 @@
 import sys
 import numpy as np
 
-def uniformRandom(parameter, turn, board):
+def uniformRandom(parameter, turn, board, print_mode="VERBOSE"):
     '''
     This is a trivial algorithm used for basic testing and benchmarking. It selects a legal 
     move for the specified player using the uniform random strategy (i.e., each legal 
     move is selected with the same probability. The parameter value should always be 0 
     for this algorithm. 
     '''
+    if print_mode in ["VERBOSE","BRIEF"]:
+        print("Uniform Random Algorithm")
     possible_moves = [i for i in range(len(board[0])) if board[0][i] == 'O']
+    if print_mode in ["VERBOSE"]:
+        print(f"Possible Moves: {possible_moves}")
     np.random.shuffle(possible_moves)
+    if print_mode in ["VERBOSE"]:
+        print(f"Move Randomly Selected: {possible_moves[0]}")
     return possible_moves[0]
 
 def isTerminal(board):
@@ -72,10 +78,15 @@ def heuristic(board,player):
 def playMove(board, player, move):
     for i in range(len(board)-1, -1, -1):
         if board[i][move] == 'O':
-            board[i][move] = player
+            board[i] = board[i][:move]+player+board[i][move+1:]
             return board
 
-def depthLimitedMinMax(maxDepth, turn, board, ):
+def flipPlayer(player):
+    if player == 'Y':
+        return 'R'
+    return 'Y'
+
+def depthLimitedMinMax(maxDepth, turn, board, print_mode="VERBOSE"):
     '''
     This algorithm uses depth-first minmax search out to a specified  maximum depth to 
     select a move. You should test each node to see whether it is a terminal state (i.e., a 
@@ -100,15 +111,13 @@ def depthLimitedMinMax(maxDepth, turn, board, ):
             if maxDepth == 1:
                 scores.append(heuristic(temp_board, turn))
             else:
-                score,index = depthLimitedMinMax(maxDepth-1, turn, temp_board)
+                score,index = depthLimitedMinMax(maxDepth-1, flipPlayer(turn), temp_board)
                 scores.append(score)
-    if len(scores) == 0:
-        return None
     if maxDepth % 2 == 0:
-        return scores.index(max(scores))
-    return scores.index(min(scores))
+        return max(scores),scores.index(max(scores))
+    return max(scores),scores.index(min(scores))
 
-def pureMonteCarloGameSearch(parameter, turn, board):
+def pureMonteCarloGameSearch(parameter, turn, board, print_mode="VERBOSE"):
     '''
     This algorithm is the simplest form of game tree search based on randomized 
     rollouts. It is essentially the UCT algorithm without a sophisticated tree search 
@@ -128,7 +137,7 @@ def pureMonteCarloGameSearch(parameter, turn, board):
     '''
     pass
 
-def upperConfidenceBound(parameter, turn, board):
+def upperConfidenceBound(parameter, turn, board, print_mode="VERBOSE"):
     '''
     Builds on PMCGS and uses most of the same structure. The only 
     difference is in how nodes are selected within the existing search tree; instead of 
@@ -152,7 +161,7 @@ def injestTestFile(input_file):
         parameter = int(content[1].strip())
         turn = content[2].strip()
         board = [line.strip() for line in content[3:]]
-        board = [line.split() for line in board]
+        board = [str(char) for char in [line.strip().split() for line in board]]
     return algorithm, parameter, turn, board
 
 if __name__ == "__main__":
@@ -187,13 +196,13 @@ if __name__ == "__main__":
     algorithm, parameter, turn, board = injestTestFile(input_file)
 
     if algorithm == "UR":
-        output = uniformRandom(parameter, turn, board)
+        output = uniformRandom(parameter, turn, board, print_mode)
     elif algorithm == "DLMM":
-        output = depthLimitedMinMax(parameter, turn, board)
+        output = depthLimitedMinMax(parameter, turn, board, print_mode)
     elif algorithm == "PMCGS":
-        output = pureMonteCarloGameSearch(parameter, turn, board)
+        output = pureMonteCarloGameSearch(parameter, turn, board, print_mode)
     elif algorithm == "UCT":
-        output = upperConfidenceBound(parameter, turn, board)
+        output = upperConfidenceBound(parameter, turn, board, print_mode)
     else:
         print("Invalid algorithm")
         sys.exit(1)
