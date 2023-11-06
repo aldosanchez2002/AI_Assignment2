@@ -34,6 +34,40 @@ def isTerminal(board):
             if board[i][j] == board[i+1][j-1] == board[i+2][j-2] == board[i+3][j-3] != 'O':
                 return True, board[i][j]        
 
+def heuristic(board,player):
+    '''
+     For each set, if a player is the only player who has pieces inside that set, 
+     then that player will receive a point for each piece they have in that set. 
+     This means pieces will be counted multiple times if they appear in multiple 
+     sets which are only occupied by that player.
+    '''
+    score = 0
+    # Horozontal -
+    for i in range(len(board)):
+        for j in range(len(board[0])-3):
+            window = board[i][j:j+4]
+            if window.count(player) + window.count("O") == 4:
+                score += window.count(player)
+    # Vertical |
+    for i in range(len(board)-3):
+        for j in range(len(board[0])):
+            window = [board[i+k][j] for k in range(4)]
+            if window.count(player) + window.count("O") == 4:
+                score += window.count(player)
+    # Diagonal /
+    for i in range(len(board)-3):
+        for j in range(len(board[0])-3):
+            window = [board[i+k][j+k] for k in range(4)]
+            if window.count(player) + window.count("O") == 4:
+                score += window.count(player)
+    # Diagonal \
+    for i in range(len(board)-3):
+        for j in range(3, len(board[0])):
+            window = [board[i+k][j-k] for k in range(4)]
+            if window.count(player) + window.count("O") == 4:
+                score += window.count(player)
+    return score
+
 def depthLimitedMinMax(maxDepth, turn, board):
     '''
     This algorithm uses depth-first minmax search out to a specified  maximum depth to 
