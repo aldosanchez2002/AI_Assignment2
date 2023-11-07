@@ -6,23 +6,27 @@ def isTerminal(board):
     for i in range(len(board)):
         for j in range(len(board[0])-3):
             if board[i][j] == board[i][j+1] == board[i][j+2] == board[i][j+3] != 'O':
-                return True, board[i][j]
+                return [True, board[i][j]]
     # Vertical |
     for i in range(len(board)-3):
         for j in range(len(board[0])):
             if board[i][j] == board[i+1][j] == board[i+2][j] == board[i+3][j] != 'O':
-                return True, board[i][j]
+                return [True, board[i][j]]
     # Diagonal /
     for i in range(len(board)-3):
         for j in range(len(board[0])-3):
             if board[i][j] == board[i+1][j+1] == board[i+2][j+2] == board[i+3][j+3] != 'O':
-                return True, board[i][j]
+                return [True, board[i][j]]
     # Diagonal \
     for i in range(len(board)-3):
         for j in range(3, len(board[0])):
             if board[i][j] == board[i+1][j-1] == board[i+2][j-2] == board[i+3][j-3] != 'O':
-                return True, board[i][j]  
-    return False, None      
+                return [True, board[i][j]]
+    
+    # Check if there's any empty spaces left
+    if 'O' not in board[0]:
+        return [True, None]
+    return [False, None]  
 
 def heuristic(board,player):
     '''
@@ -60,12 +64,11 @@ def heuristic(board,player):
     return score
 
 def playMove(board, player, move):
-    if not move:
-        return
     for i in range(len(board)-1, -1, -1):
         if board[i][move] == 'O':
             board[i] = board[i][:move]+[player]+board[i][move+1:]
             return board
+    return board
 
 def flipPlayer(player):
     if player == 'Y':
@@ -118,7 +121,7 @@ def depthLimitedMinMaxAux(maxDepth, turn, board, print_mode="VERBOSE"):
             if maxDepth == 1:
                 scores.append(heuristic(temp_board, turn))
             else:
-                score,index = depthLimitedMinMax(maxDepth-1, flipPlayer(turn), temp_board)
+                score,index = depthLimitedMinMaxAux(maxDepth-1, flipPlayer(turn), temp_board)
                 scores.append(score)
     if maxDepth % 2 == 0:
         return max(scores),scores.index(max(scores))
