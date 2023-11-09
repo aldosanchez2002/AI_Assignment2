@@ -5,37 +5,58 @@ from Part2 import *
 This file is for player itneraction to play against the AI
 '''
 
+columns = 7
+rows = 6
+
 def selectAI():
     choice = ""
-    while choice not in ["1", "2", "3", "4", "5"]:
+    while choice not in ["1", "2", "3", "4", "5", "6"]:
         print("Welcome to Connect 4!")
         print("You will be playing as Yellow (Y) against the AI as Red (R)")
         print("Select which AI you want to play against:")
         print("1. Random AI")
-        print("2. Minimax AI")
+        print("2. MinMax AI")
         print("3. Monte Carlo AI")
         print("4. Upper Confidence Tree AI")  
-        print("5. Exit")
+        print("5. Change board size")
+        print("6. Exit")
         choice = input()
-    if choice == "5":
+    if choice == "6":
         sys.exit(0)
+    if choice == "5":
+        setBoardSize()
+        return selectAI()
     if choice == "1":
         return "UR"
     if choice == "2":
         param=-1
-        while param >10 or param < 0:
-            param = int(input("Enter dificulty for Minimax AI (0-10)"))
-        return "DLMM"+str(param)
+        maxDepth = 10
+        while param >maxDepth or param < 0:
+            param = int(input(f"Enter dificulty for Minimax AI (0-{maxDepth})"))
+        return f"DLMM{param}"
     if choice == "3":
         param=-1
-        while param >10000 or param < 0:
-            param = int(input("Enter number of simulations for Monte Carlo AI (0-10000)"))
-        return "PMCGS"+str(param)
+        maxParam = 10000
+        while param >maxParam or param < 0:
+            param = int(input(f"Enter number of simulations for Monte Carlo AI (0-{maxParam})"))
+        return f"PMCGS{param}"
     if choice == "4":
         param=-1
-        while param >10000 or param < 0:
-            param = int(input("Enter number of simulations for Upper Confidence Tree AI (0-10000)"))
-        return "UCT"+str(param)
+        maxParam = 10000
+        while param > maxParam or param < 0:
+            param = int(input(f"Enter number of simulations for Upper Confidence Tree AI (0-{maxParam})"))
+        return f"UCT{param}"
+
+def setBoardSize():
+    global columns
+    global rows
+    columns = -1
+    rows = -1
+    while columns not in range(4, 11):
+        columns = int(input("Enter number of columns (4-10): "))
+    while rows not in range(4, 11):
+        rows = int(input("Enter number of rows (4-10): "))
+    print(f"Board size set to {columns}x{rows}\n")
 
 def selectMove(board):
     move = -1
@@ -56,24 +77,16 @@ def selectMove(board):
     
 def playAI():
     global flag
-    board = ["O"*6 for j in range(5)]
+    board = ["O"*columns for j in range(rows)]
     opponent = selectAI()
     while not isTerminal(board)[0]:
-        validMove = False
-        while not validMove:
-            move = selectMove(board)
-            newboard = playMove(board, "Y", move)
-            if not newboard:
-                print("\tINVALID MOVE")
-            else:
-                board = newboard
-                validMove = True
-            
+        move = selectMove(board)
+        board = playMove(board, "Y", move)
         if isTerminal(board)[0]:
             break
-        print("AI is thinking...", end="\r")
+        print("AI is thinking... consider a smaller board", end="\r")
         move = getMove(opponent, "R", board)
-        print(f"AI played in column {move}")
+        print(f"AI played in column {move+1}")
         board = playMove(board, "R", move)
     _, winner = isTerminal(board)
     print("Final Board:")
@@ -84,7 +97,7 @@ def playAI():
         if "UR" in opponent:
             opponent = "Uniform Random AI"
         elif "DLMM" in opponent:
-            opponent = "Depth Limited Minimax AI"
+            opponent = "Depth Limited MinMax AI"
         elif "PMCGS" in opponent:
             opponent = "Pure Monte Carlo AI"
         elif "UCT" in opponent:

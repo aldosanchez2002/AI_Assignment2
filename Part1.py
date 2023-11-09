@@ -12,7 +12,6 @@ class Node:
     def UCBVal(self):
         return self.Q/self.N
 
-
 def isTerminal(board):
     if not board:
         raise Exception("Empty board")
@@ -42,61 +41,15 @@ def isTerminal(board):
         return [True, 'O']
     return [False, None]  
 
-def heuristic2B(board,player):
-    '''
-     For each set, if a player is the only player who has pieces inside that set, 
-     then that player will receive a point for each piece they have in that set. 
-     This means pieces will be counted multiple times if they appear in multiple 
-     sets which are only occupied by that player. 
-     "Set" refers to a consecurtive group of 4 spaces.
-    '''
-    # window count checks if there's none of the other player's tokens in the window
-    score = 0
-    # Horozontal -
-    for i in range(len(board)):
-        for j in range(len(board[0])-3):
-            window = board[i][j:j+4]
-            if window.count(player) + window.count("O") == 4:
-                windowScore = window.count(player)
-                if windowScore == 3:
-                    windowScore = 100
-                score += windowScore
-    # Vertical |
-    for i in range(len(board)-3):
-        for j in range(len(board[0])):
-            window = [board[i+k][j] for k in range(4)]
-            if window.count(player) + window.count("O") == 4:
-                windowScore = window.count(player)
-                if windowScore == 3:
-                    windowScore = 100
-                score += windowScore
-    # Diagonal /
-    for i in range(len(board)-3):
-        for j in range(len(board[0])-3):
-            window = [board[i+k][j+k] for k in range(4)]
-            if window.count(player) + window.count("O") == 4:
-                windowScore = window.count(player)
-                if windowScore == 3:
-                    windowScore = 100
-                score += windowScore
-    # Diagonal \
-    for i in range(len(board)-3):
-        for j in range(3, len(board[0])):
-            window = [board[i+k][j-k] for k in range(4)]
-            if window.count(player) + window.count("O") == 4:
-                windowScore = window.count(player)
-                if windowScore == 3:
-                    windowScore = 100
-                score += windowScore
-    return score - heuristic1(board, flipPlayer(player))
-
 def heuristic2(board,player):
     '''
-     For each set, if a player is the only player who has pieces inside that set, 
-     then that player will receive a point for each piece they have in that set. 
-     This means pieces will be counted multiple times if they appear in multiple 
-     sets which are only occupied by that player. 
-     "Set" refers to a consecurtive group of 4 spaces.
+    Similar to heuristic1 in:
+        For each set, if a player is the only player who has pieces inside that set, 
+        then that player will receive a point for each piece they have in that set. 
+        This means pieces will be counted multiple times if they appear in multiple 
+        sets which are only occupied by that player. 
+        "Set" refers to a consecurtive group of 4 spaces.
+    However, this heuristic also measures opponents heuristic and subtracts it from the score.
     '''
     # window count checks if there's none of the other player's tokens in the window
     score = 0
@@ -124,7 +77,7 @@ def heuristic2(board,player):
             window = [board[i+k][j-k] for k in range(4)]
             if window.count(player) + window.count("O") == 4:
                 score += window.count(player)
-    return max(0,score - heuristic2B(board, flipPlayer(player)))
+        return score - heuristic1(board, flipPlayer(player))
 
 def heuristic1(board,player):
     '''
