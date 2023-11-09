@@ -1,7 +1,10 @@
 import sys
 import numpy as np
+import random
 
 def isTerminal(board):
+    if not board:
+        raise Exception("Empty board")
     # Horozontal -
     for i in range(len(board)):
         for j in range(len(board[0])-3):
@@ -25,15 +28,100 @@ def isTerminal(board):
     
     # Check if there's any empty spaces left
     if 'O' not in board[0]:
-        return [True, None]
+        return [True, 'O']
     return [False, None]  
 
-def heuristic(board,player):
+def heuristic2B(board,player):
     '''
      For each set, if a player is the only player who has pieces inside that set, 
      then that player will receive a point for each piece they have in that set. 
      This means pieces will be counted multiple times if they appear in multiple 
-     sets which are only occupied by that player.
+     sets which are only occupied by that player. 
+     "Set" refers to a consecurtive group of 4 spaces.
+    '''
+    # window count checks if there's none of the other player's tokens in the window
+    score = 0
+    # Horozontal -
+    for i in range(len(board)):
+        for j in range(len(board[0])-3):
+            window = board[i][j:j+4]
+            if window.count(player) + window.count("O") == 4:
+                windowScore = window.count(player)
+                if windowScore == 3:
+                    windowScore = 100
+                score += windowScore
+    # Vertical |
+    for i in range(len(board)-3):
+        for j in range(len(board[0])):
+            window = [board[i+k][j] for k in range(4)]
+            if window.count(player) + window.count("O") == 4:
+                windowScore = window.count(player)
+                if windowScore == 3:
+                    windowScore = 100
+                score += windowScore
+    # Diagonal /
+    for i in range(len(board)-3):
+        for j in range(len(board[0])-3):
+            window = [board[i+k][j+k] for k in range(4)]
+            if window.count(player) + window.count("O") == 4:
+                windowScore = window.count(player)
+                if windowScore == 3:
+                    windowScore = 100
+                score += windowScore
+    # Diagonal \
+    for i in range(len(board)-3):
+        for j in range(3, len(board[0])):
+            window = [board[i+k][j-k] for k in range(4)]
+            if window.count(player) + window.count("O") == 4:
+                windowScore = window.count(player)
+                if windowScore == 3:
+                    windowScore = 100
+                score += windowScore
+    return score - heuristic1(board, flipPlayer(player))
+
+def heuristic2(board,player):
+    '''
+     For each set, if a player is the only player who has pieces inside that set, 
+     then that player will receive a point for each piece they have in that set. 
+     This means pieces will be counted multiple times if they appear in multiple 
+     sets which are only occupied by that player. 
+     "Set" refers to a consecurtive group of 4 spaces.
+    '''
+    # window count checks if there's none of the other player's tokens in the window
+    score = 0
+    # Horozontal -
+    for i in range(len(board)):
+        for j in range(len(board[0])-3):
+            window = board[i][j:j+4]
+            if window.count(player) + window.count("O") == 4:
+                score += window.count(player)
+    # Vertical |
+    for i in range(len(board)-3):
+        for j in range(len(board[0])):
+            window = [board[i+k][j] for k in range(4)]
+            if window.count(player) + window.count("O") == 4: 
+                score += window.count(player)
+    # Diagonal /
+    for i in range(len(board)-3):
+        for j in range(len(board[0])-3):
+            window = [board[i+k][j+k] for k in range(4)]
+            if window.count(player) + window.count("O") == 4:
+                score += window.count(player)
+    # Diagonal \
+    for i in range(len(board)-3):
+        for j in range(3, len(board[0])):
+            window = [board[i+k][j-k] for k in range(4)]
+            if window.count(player) + window.count("O") == 4:
+                score += window.count(player)
+    return max(0,score - heuristic2B(board, flipPlayer(player)))
+
+def heuristic1(board,player):
+    '''
+     For each set, if a player is the only player who has pieces inside that set, 
+     then that player will receive a point for each piece they have in that set. 
+     This means pieces will be counted multiple times if they appear in multiple 
+     sets which are only occupied by that player. 
+     "Set" refers to a consecurtive group of 4 spaces.
     '''
     # window count checks if there's none of the other player's tokens in the window
     score = 0
@@ -63,17 +151,76 @@ def heuristic(board,player):
                 score += window.count(player)
     return score
 
-def playMove(board, player, move):
-    for i in range(len(board)-1, -1, -1):
-        if board[i][move] == 'O':
-            board[i] = board[i][:move]+[player]+board[i][move+1:]
-            return board
-    return board
+def playMove(board, player, move, print_mode="BRIEF"):
+    '''
+    Returns a new board with the move applied if the move is legal, otherwise returns False
+    '''
+    temp_board = [row[:] for row in board]
+    if print_mode in ["VERBOSE"]:
+        print(f"Player {player} plays in column {move}")
+        for row in temp_board:
+            print("\t"+" ".join(row))
+    for i in range(len(temp_board)-1, -1, -1):
+        if temp_board[i][move] == 'O':
+            temp_board[i] = temp_board[i][:move] + player + temp_board[i][move+1:]
+            return temp_board
+    raise Exception("Invalid move")
+
+def isLegalMove(board, move):
+    return board[0][move] == 'O'
 
 def flipPlayer(player):
-    if player == 'Y':
-        return 'R'
-    return 'Y'
+    return 'R' if player == 'Y' else 'Y'
+
+def depthLimitedMinMax(maxDepth, turn, board, print_mode="VERBOSE"):
+    return depthLimitedMinMaxAux(maxDepth, turn, board, print_mode)[1]
+
+def depthLimitedMinMaxAux(maxDepth, turn, board, print_mode="none"):
+    scores = {}
+
+    if print_mode in ["VERBOSE", "BRIEF"]:
+        print(f"Depth Limited MinMax Algorithm with maxDepth={maxDepth}")
+        input()
+
+    if print_mode == "VERBOSE":
+        for row in board:
+            print("\t" + " ".join(row))
+
+    for col in range(len(board[0])):
+        if print_mode == "VERBOSE":
+            print(f"Trying {turn} plays in column {col}")
+        if not isLegalMove(board, col):
+            if print_mode == "VERBOSE":
+                print("Move Unsuccessful")
+        else:
+            board = playMove(board, turn, col)
+            if print_mode == "VERBOSE":
+                print("Move Successful")
+                for row in board:
+                    print("\t" + " ".join(row))
+                input()
+            isDone,winner = isTerminal(board)
+            if isDone:
+                if winner == turn:
+                    return float('inf'), col
+                if winner == flipPlayer(turn):
+                    return float('-1'), col
+                return 0, col # tie
+            if maxDepth == 1:
+                scores[col]=heuristic2(board, turn)
+            else:
+                score, _ = depthLimitedMinMaxAux(maxDepth-1, flipPlayer(turn), board)
+                scores[col]=score
+    if maxDepth % 2 == 0:
+        score = max(scores.values())
+        max_indices = [key for key in scores.keys() if scores[key] == score]
+        index = random.choice(max_indices)
+    else:
+        score = min(scores.values())
+        min_indices = [key for key in scores.keys() if scores[key] == score]
+        index = random.choice(min_indices)
+
+    return score, index
 
 def uniformRandom(parameter, turn, board, print_mode="VERBOSE"):
     '''
@@ -88,44 +235,11 @@ def uniformRandom(parameter, turn, board, print_mode="VERBOSE"):
     if print_mode in ["VERBOSE"]:
         print(f"Possible Moves: {possible_moves}")
     np.random.shuffle(possible_moves)
-    if print_mode in ["VERBOSE"]:
-        print(f"Move Randomly Selected: {possible_moves[0]}")
     if possible_moves:
+        if print_mode in ["VERBOSE"]:
+            print(f"Move Randomly Selected: {possible_moves[0]}")
         return possible_moves[0]
-
-def depthLimitedMinMax(maxDepth, turn, board, print_mode="VERBOSE"):
-    return depthLimitedMinMaxAux(maxDepth, turn, board, print_mode)[1]
-
-def depthLimitedMinMaxAux(maxDepth, turn, board, print_mode="VERBOSE"):
-    '''
-    This algorithm uses depth-first minmax search out to a specified  maximum depth to 
-    select a move. You should test each node to see whether it is a terminal state (i.e., a 
-    win for one player or a draw); if so return that value immediately. If you reach the 
-    depth limit without reaching a terminal state, apply a heuristic evaluation function 
-    to the game state and return that value. You may choose to implement any 
-    reasonable heuristic; you will give a brief description in your report. The heuristic 
-    should take in any valid (non-terminal) board state as input and return a predicted 
-    value for that state between -1 and 1. For example, you may want to count the 
-    number of lines of 2 or 3 pieces that can be extended for each player. If there are 
-    ties, break them randomly. Make sure you keep track of which player (maximizing 
-    or minimizing) is making the choice at each node. Output the value for each of the 
-    immediate next moves from the root (with Null for illegal moves) and the final move 
-    selected. Example in Instructions.pdf
-    '''
-    scores=[0]
-    for col in range(len(board[0])):
-        temp_board = playMove(board, turn, col)
-        if temp_board: # check if it's a legal move
-            if isTerminal(temp_board) == [True, turn]:
-                return float('inf'), col
-            if maxDepth == 1:
-                scores.append(heuristic(temp_board, turn))
-            else:
-                score,index = depthLimitedMinMaxAux(maxDepth-1, flipPlayer(turn), temp_board)
-                scores.append(score)
-    if maxDepth % 2 == 0:
-        return max(scores),scores.index(max(scores))
-    return max(scores),scores.index(min(scores))
+    raise Exception("No possible moves")
 
 def pureMonteCarloGameSearch(parameter, turn, board, print_mode="VERBOSE"):
     '''
@@ -171,7 +285,8 @@ def injestTestFile(input_file):
         parameter = int(content[1].strip())
         turn = content[2].strip()
         board = [line.strip() for line in content[3:]]
-        board = [str(char) for char in [line.strip().split() for line in board]]
+        board = [char for char in [line.strip().split() for line in board]]
+        board = [b[0] for b in board]
     return algorithm, parameter, turn, board
 
 if __name__ == "__main__":
@@ -218,3 +333,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print(f"Final Move Selected: {output}")
+    print()

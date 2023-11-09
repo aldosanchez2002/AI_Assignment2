@@ -1,6 +1,6 @@
 from Part1 import *
-import copy
-import sys
+from collections import defaultdict
+import re
 
 # You will run an experiment to test six variations of your algorithms against each 
 # other, as listed below. The numbers after the algorithm acronym are the parameter 
@@ -11,27 +11,50 @@ import sys
 # the algorithm specified on the column. 
 
 def main():
-    contenders = ["UR", "DLMM5", "PMCGS500", "PMCGS10000", "UCT500", "UCT10000"]
+    scores = defaultdict(lambda: defaultdict(int))
+    contenders = ["UR", "DLMM3", "PMCGS500", "PMCGS10000", "UCT500", "UCT10000"]
     for contender1 in contenders:
         for contender2 in contenders:
             wins = [0, 0]
+            ties = 0
             for x in range(100):
-                board = [
-                ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-                ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-                ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-                ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-                ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-                ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-                ]
+                board = ["O"*7 for j in range(6)]
                 winner = playGame(contender1, contender2, board)
-                wins[winner] += 1
-                # sys.exit(0)
-            print(f"{contender1} {wins[0]} to {contender2} {wins[1]}")
+                if winner:
+                    wins[winner] += 1
+                else:
+                    ties+=1
+            scores[contender1][contender2]+=wins[0]
+            scores[contender2][contender1]+=wins[1]
+            print(f"{contender1} {wins[0]} to {contender2} {wins[1]}", end=" ")
+            print(f"Ties: {ties}")
+    print("_"*11*(len(contenders)+1))
+    prettyPrint(scores)
+
+def prettyPrint(scores):
+    '''prints dictionary into a grid'''
+    grid=[]
+    temp=["     "]
+    for contender1 in scores.keys():
+        temp.append(contender1)
+    grid.append(temp)
+    for contender1 in scores.keys():
+        temp=[contender1]
+        grid.append(temp)
+    for row in grid[1:]:
+        for contender2 in scores.keys():
+            row.append(scores[row[0]][contender2])
+
+    #pad all values to 11 chars
+    for row in grid:
+        for i in range(len(row)):
+            row[i] = str(row[i]).ljust(11)
+    for row in grid:
+        print("".join(row))
 
 def printBoard(board):
     for row in board:
-        print(" ".join(row))
+        print("\t"+" ".join(row))
     print()
 
 def playGame(contender1, contender2, board):
@@ -47,21 +70,33 @@ def playGame(contender1, contender2, board):
         Yturn = not Yturn
         done, winner = isTerminal(board)
         if done:
-            return int(winner == "R")
+            if winner:
+                return int(winner == "R")
+            return
 
 def getMove(algorithm, turn, board, print_mode="NONE"):
-    if algorithm == "UR":
-        return uniformRandom(0, turn, board, print_mode)
-    if algorithm == "DLMM5":
-        return depthLimitedMinMax(5, turn, board, print_mode)
-    if algorithm == "PMCGS500":
-        return pureMonteCarloGameSearch(500, turn, board, print_mode)
-    if algorithm == "PMCGS10000":
-        return pureMonteCarloGameSearch(10000, turn, board, print_mode)
-    if algorithm == "UCT500":
-        return upperConfidenceBound(500, turn, board, print_mode)
-    if algorithm == "UCT10000":
-        return upperConfidenceBound(10000, turn, board, print_mode)
+    algoName, algoParam = splitName(algorithm)
+    if algoName == "UR":
+        return uniformRandom(algoParam, turn, board, print_mode)
+    if algoName == "DLMM":
+        return depthLimitedMinMax(algoParam, turn, board, print_mode)
+    if algoName == "PMCGS":
+        return pureMonteCarloGameSearch(algoParam, turn, board, print_mode)
+    if algoName == "UCT":
+        return upperConfidenceBound(algoParam, turn, board, print_mode)
+
+def splitName(algoName):
+    RightNumberRegex = re.compile(r'\d+$')
+    LeftLetterRegex = re.compile(r'^[A-Z]+')
+    number = RightNumberRegex.search(algoName)
+    if number:
+        number = number.group()
+    letters = LeftLetterRegex.search(algoName)
+    if letters:
+        letters = letters.group()
+    if not number:
+        number=0
+    return letters, int(number)
 
 if __name__ == '__main__':
     main()

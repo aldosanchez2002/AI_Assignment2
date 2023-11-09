@@ -1,6 +1,6 @@
 DLMM
-2  
-Y 
+5 
+R 
 OOOOOOO 
 OOOOOOO 
 OOYOOOY 
