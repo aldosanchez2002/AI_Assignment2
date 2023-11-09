@@ -1,6 +1,17 @@
 import sys
 import numpy as np
 
+class Node:
+    def __init__(self,parent):
+        self.parent = parent
+        self.N = 0
+        self.Q = 0
+        self.children = []
+
+    def UCBVal(self):
+        return self.Q/self.N
+
+
 def isTerminal(board):
     # Horozontal -
     for i in range(len(board)):
@@ -145,7 +156,12 @@ def pureMonteCarloGameSearch(parameter, turn, board, print_mode="VERBOSE"):
     NODE VALUE: X” where X is -1, 0, or 1. Then print the updated values. Example in 
     Instructions.pdf
     '''
+
+
     return uniformRandom(parameter, turn, board, print_mode)
+
+def simulate(node):
+    pass
 
 def upperConfidenceBound(parameter, turn, board, print_mode="VERBOSE"):
     '''
