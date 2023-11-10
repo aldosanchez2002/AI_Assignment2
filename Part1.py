@@ -3,8 +3,9 @@ import numpy as np
 import random
 
 class Node:
-    def __init__(self,parent):
+    def __init__(self,parent,state):
         self.parent = parent
+        self.state = state
         self.N = 0
         self.Q = 0
         self.children = []
@@ -229,6 +230,7 @@ def pureMonteCarloGameSearch(parameter, turn, board, print_mode="VERBOSE"):
 
 def simulate(node):
     pass
+
 
 def upperConfidenceBound(parameter, turn, board, print_mode="VERBOSE"):
     '''
