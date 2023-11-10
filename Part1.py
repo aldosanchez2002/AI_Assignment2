@@ -1,17 +1,33 @@
 import sys
 import numpy as np
 import random
+from copy import deepcopy
+
 
 class Node:
-    def __init__(self,parent,state):
-        self.parent = parent
-        self.state = state
+    def __init__(self,move,parent):
+        self.parent = 0
+        self.move = move
         self.N = 0
         self.Q = 0
         self.children = []
 
     def UCBVal(self):
         return self.Q/self.N
+    
+    def addChildren(self):
+        pass
+
+class MCTS:
+    def __init__(self,board):
+        self.root_state = board
+        self.root = Node(None,None)
+        self.nodeCount = 0
+        self.rolloutCount = 0
+
+    def selectNode(self):
+        node = self.root
+        state = deepcopy(self.root_state)
 
 def isTerminal(board):
     if not board:
@@ -224,6 +240,7 @@ def pureMonteCarloGameSearch(parameter, turn, board, print_mode="VERBOSE"):
     NODE VALUE: X” where X is -1, 0, or 1. Then print the updated values. Example in 
     Instructions.pdf
     '''
+    Root = Node(board)
 
 
     return uniformRandom(parameter, turn, board, print_mode)
