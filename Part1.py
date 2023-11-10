@@ -6,42 +6,94 @@ from copy import deepcopy
 
 class Node:
     def __init__(self,move,parent):
-        self.parent = 0
+        self.parent = parent
         self.move = move
-        self.N = 0
-        self.Q = 0
+        self.Ni = 0
+        self.Wi = 0
         self.children = []
+        self.player = None
 
     def UCBVal(self):
         return self.Q/self.N
     
-    def addChildren(self):
-        pass
+    def addChildrenNodes(self,children):
+        self.children = children
 
 class MCTS:
     def __init__(self,board):
-        self.root_state = board
+        self.root_state = deepcopy(board)
         self.root = Node(None,None)
         self.nodeCount = 0
         self.rolloutCount = 0
 
     def selectNode(self):
         node = self.root
-        state = deepcopy(self.root_state)
+        board = deepcopy(self.root_state)
 
         while len(node.children) != 0:
-            children = node.children.values()
-            max
+            children = node.children
+            node = random.choice(children)
 
-    def expand(self,parent,state):
-        if isTerminal() is True : return False
-        print("Cant expany anymore")
+            
 
-    def rollout(self,state):
-        pass
+           
+            
 
-    def back_propogate(self,node,move):
-        pass
+        return node, board
+
+    def expand(self,parent_node,board):
+        
+        #check here if game is over
+
+
+        #Store all possible moves as children of selected node
+        children = [Node(move,parent_node) for move in possibleMoves(board)]
+        #Each depth means a different turn, assign the turn for each node
+        for child in children:
+            if child.parent.player == 'R':
+                child.player = 'Y'
+            else:
+                child.player == 'R'
+        #Add children to the selected (parent) node
+        parent_node.addChildrenNodes(children)
+
+    def rollout(self,node,board):
+        game_over = isTerminal(board)
+        if game_over:
+            return board
+        
+        tempBoard = deepcopy(board)
+        while not game_over:
+            possible_moves = possibleMoves(tempBoard)
+            randomMove = random.choice(possible_moves)
+            tempBoard = playMove(board,node.player,randomMove)
+            game_over = isTerminal(tempBoard)
+        
+        return tempBoard
+
+
+
+    def back_propogate(self,node,move,winner):
+        if move is winner:
+            reward = 0
+        else:
+            reward = 1
+
+
+        while node is not None:
+            node.Ni += 1
+            node.Wi += reward
+
+            #Check for a draw
+            if winner is '0':
+                reward = 0
+            else:
+                reward = 1 - reward
+
+def possibleMoves(board):
+    possible_moves = [i for i in range(len(board[0])) if board[0][i] == '0']
+    return possible_moves
+
 
 def isTerminal(board):
     if not board:
@@ -226,7 +278,7 @@ def uniformRandom(parameter, turn, board, print_mode="VERBOSE"):
     '''
     if print_mode in ["VERBOSE","BRIEF"]:
         print("Uniform Random Algorithm")
-    possible_moves = [i for i in range(len(board[0])) if board[0][i] == 'O']
+    possible_moves = possibleMoves(board)
     if print_mode in ["VERBOSE"]:
         print(f"Possible Moves: {possible_moves}")
     np.random.shuffle(possible_moves)
@@ -254,8 +306,8 @@ def pureMonteCarloGameSearch(parameter, turn, board, print_mode="VERBOSE"):
     NODE VALUE: X” where X is -1, 0, or 1. Then print the updated values. Example in 
     Instructions.pdf
     '''
-    Root = Node(board)
-
+    
+    monteCarlo = MCTS(board,)
 
     return uniformRandom(parameter, turn, board, print_mode)
 
