@@ -29,6 +29,20 @@ class MCTS:
         node = self.root
         state = deepcopy(self.root_state)
 
+        while len(node.children) != 0:
+            children = node.children.values()
+            max
+
+    def expand(self,parent,state):
+        if isTerminal() is True : return False
+        print("Cant expany anymore")
+
+    def rollout(self,state):
+        pass
+
+    def back_propogate(self,node,move):
+        pass
+
 def isTerminal(board):
     if not board:
         raise Exception("Empty board")
