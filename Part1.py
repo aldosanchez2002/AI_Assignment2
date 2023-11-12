@@ -3,7 +3,6 @@ import numpy as np
 import random
 from copy import deepcopy
 
-
 class Node:
     def __init__(self,move,parent):
         self.parent = parent
@@ -33,19 +32,10 @@ class MCTS:
         while len(node.children) != 0:
             children = node.children
             node = random.choice(children)
-
-            
-
-           
-            
-
         return node, board
 
     def expand(self,parent_node,board):
-        
         #check here if game is over
-
-
         #Store all possible moves as children of selected node
         children = [Node(move,parent_node) for move in possibleMoves(board)]
         #Each depth means a different turn, assign the turn for each node
@@ -72,28 +62,25 @@ class MCTS:
         return tempBoard
 
 
-
     def back_propogate(self,node,move,winner):
         if move is winner:
             reward = 0
         else:
             reward = 1
 
-
         while node is not None:
             node.Ni += 1
             node.Wi += reward
 
             #Check for a draw
-            if winner is '0':
+            if winner == '0':
                 reward = 0
             else:
                 reward = 1 - reward
 
 def possibleMoves(board):
-    possible_moves = [i for i in range(len(board[0])) if board[0][i] == '0']
+    possible_moves = [i for i in range(len(board[0])) if board[0][i] == 'O']
     return possible_moves
-
 
 def isTerminal(board):
     if not board:
@@ -313,7 +300,6 @@ def pureMonteCarloGameSearch(parameter, turn, board, print_mode="VERBOSE"):
 
 def simulate(node):
     pass
-
 
 def upperConfidenceBound(parameter, turn, board, print_mode="VERBOSE"):
     '''
