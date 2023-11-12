@@ -86,7 +86,7 @@ def playAI():
             break
         print("AI is thinking... consider a smaller board", end="\r")
         move = getMove(opponent, "R", board)
-        print(f"AI played in column {move+1}")
+        print(f"\n,AI played in column {move+1}")
         board = playMove(board, "R", move)
     _, winner = isTerminal(board)
     print("Final Board:")

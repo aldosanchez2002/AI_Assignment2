@@ -111,44 +111,6 @@ def isTerminal(board):
         return [True, 'O']
     return [False, None]  
 
-def heuristic2(board,player):
-    '''
-    Similar to heuristic1 in:
-        For each set, if a player is the only player who has pieces inside that set, 
-        then that player will receive a point for each piece they have in that set. 
-        This means pieces will be counted multiple times if they appear in multiple 
-        sets which are only occupied by that player. 
-        "Set" refers to a consecurtive group of 4 spaces.
-    However, this heuristic also measures opponents heuristic and subtracts it from the score.
-    '''
-    # window count checks if there's none of the other player's tokens in the window
-    score = 0
-    # Horozontal -
-    for i in range(len(board)):
-        for j in range(len(board[0])-3):
-            window = board[i][j:j+4]
-            if window.count(player) + window.count("O") == 4:
-                score += window.count(player)
-    # Vertical |
-    for i in range(len(board)-3):
-        for j in range(len(board[0])):
-            window = [board[i+k][j] for k in range(4)]
-            if window.count(player) + window.count("O") == 4: 
-                score += window.count(player)
-    # Diagonal /
-    for i in range(len(board)-3):
-        for j in range(len(board[0])-3):
-            window = [board[i+k][j+k] for k in range(4)]
-            if window.count(player) + window.count("O") == 4:
-                score += window.count(player)
-    # Diagonal \
-    for i in range(len(board)-3):
-        for j in range(3, len(board[0])):
-            window = [board[i+k][j-k] for k in range(4)]
-            if window.count(player) + window.count("O") == 4:
-                score += window.count(player)
-        return score - heuristic1(board, flipPlayer(player))
-
 def heuristic1(board,player):
     '''
      For each set, if a player is the only player who has pieces inside that set, 
@@ -185,6 +147,59 @@ def heuristic1(board,player):
                 score += window.count(player)
     return score
 
+def heuristic2(board,player):
+    '''
+    Similar to heuristic1 in:
+        For each set, if a player is the only player who has pieces inside that set, 
+        then that player will receive a point for each piece they have in that set. 
+        This means pieces will be counted multiple times if they appear in multiple 
+        sets which are only occupied by that player. 
+        "Set" refers to a consecurtive group of 4 spaces.
+    However, this heuristic also measures opponents heuristic and subtracts it from the score.
+    '''
+    return heuristic1(board,player) - heuristic1(board, flipPlayer(player))
+
+def heuristic3(board,player, power=3):
+    '''
+     For each set, if a player is the only player who has pieces inside that set, 
+     then that player will receive the amount of pieces they have in that set to the power of power. 
+     This means pieces will be counted multiple times if they appear in multiple 
+     sets which are only occupied by that player. 
+     "Set" refers to a consecurtive group of 4 spaces.
+    '''
+    # window count checks if there's none of the other player's tokens in the window
+    score = 0
+    # Horozontal -
+    for i in range(len(board)):
+        for j in range(len(board[0])-3):
+            window = board[i][j:j+4]
+            if window.count(player) + window.count("O") == 4:
+                score += window.count(player)**power
+    # Vertical |
+    for i in range(len(board)-3):
+        for j in range(len(board[0])):
+            window = [board[i+k][j] for k in range(4)]
+            if window.count(player) + window.count("O") == 4: 
+                score += window.count(player)**power
+    # Diagonal /
+    for i in range(len(board)-3):
+        for j in range(len(board[0])-3):
+            window = [board[i+k][j+k] for k in range(4)]
+            if window.count(player) + window.count("O") == 4:
+                score += window.count(player)**power
+    # Diagonal \
+    for i in range(len(board)-3):
+        for j in range(3, len(board[0])):
+            window = [board[i+k][j-k] for k in range(4)]
+            if window.count(player) + window.count("O") == 4:
+                score += window.count(player)**power
+    return score
+
+def heuristic4(board,player):
+    playerScore = heuristic3(board,player)
+    opponentScore = heuristic3(board, flipPlayer(player))
+    return playerScore - opponentScore
+
 def playMove(board, player, move, print_mode="BRIEF"):
     '''
     Returns a new board with the move applied if the move is legal, otherwise returns False
@@ -206,46 +221,53 @@ def isLegalMove(board, move):
 def flipPlayer(player):
     return 'R' if player == 'Y' else 'Y'
 
-def depthLimitedMinMax(maxDepth, turn, board, print_mode="VERBOSE"):
+def depthLimitedMinMax(maxDepth, turn, board, print_mode="none"):
     return depthLimitedMinMaxAux(maxDepth, turn, board, print_mode)[1]
 
 def depthLimitedMinMaxAux(maxDepth, turn, board, print_mode="none"):
     scores = {}
-
     if print_mode in ["VERBOSE", "BRIEF"]:
         print(f"Depth Limited MinMax Algorithm with maxDepth={maxDepth}")
         input()
-
     if print_mode == "VERBOSE":
         for row in board:
             print("\t" + " ".join(row))
 
     for col in range(len(board[0])):
+        boardCopy = deepcopy(board)
         if print_mode == "VERBOSE":
             print(f"Trying {turn} plays in column {col}")
+            print("Scores: ")
+            for key,value in scores.items():
+                print(f"\t{key}: {value}")
+
+        
         if not isLegalMove(board, col):
             if print_mode == "VERBOSE":
                 print("Move Unsuccessful")
         else:
-            board = playMove(board, turn, col)
+            boardCopy = playMove(board, turn, col)
             if print_mode == "VERBOSE":
                 print("Move Successful")
-                for row in board:
+                for row in boardCopy:
                     print("\t" + " ".join(row))
                 input()
-            isDone,winner = isTerminal(board)
+            isDone,winner = isTerminal(boardCopy)
             if isDone:
                 if winner == turn:
                     return float('inf'), col
                 if winner == flipPlayer(turn):
-                    return float('-1'), col
+                    return -float('inf'), col
                 return 0, col # tie
             if maxDepth == 1:
-                scores[col]=heuristic2(board, turn)
+                heuristic_value = heuristic4(boardCopy, turn)
+                scores[col] = heuristic_value
+                if print_mode in ["VERBOSE"]:
+                    print(f"heuristic value: {heuristic_value}")
             else:
-                score, _ = depthLimitedMinMaxAux(maxDepth-1, flipPlayer(turn), board)
-                scores[col]=score
-    if maxDepth % 2 == 0:
+                score, _ = depthLimitedMinMaxAux(maxDepth-1, flipPlayer(turn), boardCopy, print_mode)
+                scores[col] = -score
+    if maxDepth % 2 == 1:
         score = max(scores.values())
         max_indices = [key for key in scores.keys() if scores[key] == score]
         index = random.choice(max_indices)
