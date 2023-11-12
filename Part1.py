@@ -1,3 +1,4 @@
+import math
 import sys
 import time
 import numpy as np
@@ -15,6 +16,10 @@ class Node:
     
     def is_leaf(self):
         return len(self.children) == 0
+
+    def UCB_value(self):
+        if self.Ni == 0: return math.sqrt(2)
+        return self.Wi / self.Ni + math.sqrt(math.log(self.parent.Ni)/self.Ni)
 
 
 class MCTS:
@@ -36,19 +41,7 @@ class MCTS:
             else:
                 print('Column:', column_counter, ': NULL')
             column_counter += 1
-    
 
-    def pmcgs_select_node(self, node): 
-        temp_board = deepcopy(self.root_board)
-
-        # Randomly selects node to expand
-        while not node.is_leaf():
-            children = node.children
-            node = random.choice(children)
-            temp_board = playMove(temp_board, node.player, node.move, print_mode)
-            
-        return node, temp_board
-    
     def pmcgs_best_move(self):
         if len(self.root.children) == 0: 
             return None
@@ -59,26 +52,97 @@ class MCTS:
                 max_value = child.Wi/child.Ni
                 max_move = child.move
         return max_move
+    
+    def uct_best_move(self):
+        if (len(self.root.children)) == 0:
+            return None
+        max_value = float('-inf')
+        max_move = None
+        for child in self.root.children:
+            if child.Ni >= max_value:
+                max_value = child.Ni
+                max_move = child.move
+        return max_move
+    
+    def uct_select_node(self,node):
+        temp_board = deepcopy(self.root_board)
+        if self.print_mode == 'VERBOSE':
+            print('ROOT')
+
+        #Selects based on UCT
+        while not node.is_leaf():
+            max_node = None
+            max_value = float('-inf')
+            candidate_nodes = []
+
+            if self.print_mode == 'VERBOSE':
+                print('wi:', node.Wi)
+                print('ni:', node.Ni)
+            
+            # Find node with the max UBT value
+            for child in node.children:
+                child_UCB_value = child.UCB_value()
+                if self.print_mode == 'VERBOSE':
+                    print(f'V{child.move}: {child_UCB_value}')
+                if child_UCB_value > max_value:
+                    max_value = child_UCB_value
+
+            for child in node.children:
+                if child.UCB_value() == max_value:
+                    candidate_nodes.append(child)
+            
+            node = random.choice(candidate_nodes)
+            if self.print_mode == 'VERBOSE':
+                print('Move Selected:', node.move, '\n')
+
+            temp_board = playMove(temp_board, node.player, node.move)
+        
+        return node, temp_board
 
     
+
+    def pmcgs_select_node(self, node): 
+        temp_board = deepcopy(self.root_board)
+        if self.print_mode == 'VERBOSE':
+            print('wi:', node.Wi)
+            print('ni:', node.Ni)
+            print('ROOT\n')
+
+        # Randomly selects node to expand
+        while not node.is_leaf():
+            children = node.children
+            node = random.choice(children)
+            if self.print_mode == 'VERBOSE':
+                print('wi:', node.Wi)
+                print('ni:', node.Ni)
+                print('Move Selected:', node.move, '\n')
+            temp_board = playMove(temp_board, node.player, node.move)
+            
+        return node, temp_board
 
     def expand(self,parent_node, board):
         #check here if game is over
         if isTerminal(board)[0]:
             return 
+        
+        if self.print_mode == 'VERBOSE':
+            print('NODE ADDED\n')
 
         child_player = 'R' if parent_node.player == 'Y' else 'Y'
 
         #Store all possible moves as children of selected node
         parent_node.children = [Node(move,parent_node, child_player) for move in possibleMoves(board)]
 
-
     def rollout(self,node,board):
+        if self.print_mode == 'VERBOSE':
+            print('Simulating')
         current_node_player = node.player
 
         while not isTerminal(board)[0]:
             random_move = random.choice(possibleMoves(board))
-            board = playMove(board, current_node_player, random_move, self.print_mode)
+            if self.print_mode == 'VERBOSE':
+                print('Move Selected:', random_move)
+            board = playMove(board, current_node_player, random_move)
             current_node_player = flipPlayer(current_node_player)
         
         return isTerminal(board)[1]
@@ -90,9 +154,16 @@ class MCTS:
         elif winner != self.root.player and winner != 'O':
             reward = 1
 
+        if self.print_mode == 'VERBOSE':
+            print('TERMINAL NODE VALUE:', reward, '\n')
+
         while node is not None:
             node.Ni += 1
             node.Wi += reward
+            if self.print_mode == 'VERBOSE':
+                print('Updated Values:')
+                print('wi:', node.Wi)
+                print('ni:', node.Ni, '\n')
             node = node.parent
 
 def possibleMoves(board):
@@ -312,7 +383,7 @@ def uniformRandom(parameter, turn, board, print_mode="VERBOSE"):
         return possible_moves[0]
     raise Exception("No possible moves")
 
-def pureMonteCarloGameSearch(time_limit, player, board, print_mode="VERBOSE"):
+def pureMonteCarloGameSearch(rollout_limit, player, board, print_mode="none"):
     '''
     This algorithm is the simplest form of game tree search based on randomized 
     rollouts. It is essentially the UCT algorithm without a sophisticated tree search 
@@ -335,22 +406,23 @@ def pureMonteCarloGameSearch(time_limit, player, board, print_mode="VERBOSE"):
     start_time = time.time()
     num_rollouts = 0
 
-    while time.time() - start_time < time_limit:
+    for i in range(rollout_limit):
         node, board = mcts.pmcgs_select_node(mcts.root)
         mcts.expand(node, board)
         winner = mcts.rollout(node, board)
         mcts.back_propogate(node, winner)
         num_rollouts += 1
     
-    print('Number of rollouts:', num_rollouts)
-    print('Seconds Elapsed:', time.time() - start_time)
-    mcts.print_values()
+    if (print_mode in ['BRIEF', 'VERBOSE']):
+        print('Number of rollouts:', num_rollouts)
+        print('Seconds Elapsed:', time.time() - start_time)
+        mcts.print_values()
     best_move = mcts.pmcgs_best_move()
 
     return best_move
 
 
-def upperConfidenceBound(parameter, turn, board, print_mode="VERBOSE"):
+def upperConfidenceBound(rollout_limit, player, board, print_mode="none"):
     '''
     Builds on PMCGS and uses most of the same structure. The only 
     difference is in how nodes are selected within the existing search tree; instead of 
@@ -365,7 +437,25 @@ def upperConfidenceBound(parameter, turn, board, print_mode="VERBOSE"):
     equation, but the direct estimate of the node value (i.e., just wi/ni). Example in 
     Instructions.pdf
     '''
-    return uniformRandom(parameter, turn, board, print_mode)
+    mcts = MCTS(board, player, print_mode)
+
+    start_time = time.time()
+    num_rollouts = 0
+
+    for i in range(rollout_limit):
+        node, board = mcts.uct_select_node(mcts.root)
+        mcts.expand(node, board)
+        winner = mcts.rollout(node, board)
+        mcts.back_propogate(node, winner)
+        num_rollouts += 1
+    
+    if (print_mode in ['BRIEF', 'VERBOSE']):
+        print('Number of rollouts:', num_rollouts)
+        print('Seconds Elapsed:', time.time() - start_time)
+        mcts.print_values()
+    best_move = mcts.uct_best_move()
+
+    return best_move
 
 def injestTestFile(input_file):
     with open(input_file, 'r') as f:
