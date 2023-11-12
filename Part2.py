@@ -17,7 +17,7 @@ def main():
         for contender2 in contenders:
             wins = [0, 0]
             ties = 0
-            for x in range(20):
+            for x in range(100):
                 board = ["O"*7 for j in range(6)]
                 winner = playGame(contender1, contender2, board)
                 if winner:
