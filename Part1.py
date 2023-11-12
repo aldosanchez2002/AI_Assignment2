@@ -1,82 +1,99 @@
 import sys
+import time
 import numpy as np
 import random
 from copy import deepcopy
 
 class Node:
-    def __init__(self,move,parent):
+    def __init__(self, move, parent, player = ''):
         self.parent = parent
         self.move = move
         self.Ni = 0
         self.Wi = 0
         self.children = []
-        self.player = None
-
-    def UCBVal(self):
-        return self.Q/self.N
+        self.player = player
     
-    def addChildrenNodes(self,children):
-        self.children = children
+    def is_leaf(self):
+        return len(self.children) == 0
+
 
 class MCTS:
-    def __init__(self,board):
-        self.root_state = deepcopy(board)
-        self.root = Node(None,None)
-        self.nodeCount = 0
-        self.rolloutCount = 0
+    def __init__(self,board, player, print_mode):
+        root_player = 'Y' if player == 'R' else 'Y'
+        self.root_board = deepcopy(board)
+        self.root = Node(None, None, root_player)
+        self.print_mode = print_mode   
+    
+    def print_values(self):
+        if len(self.root.children) == 0:
+            print("Board was given in solved state. Game was not played")
+            return
+        
+        column_counter = 0
+        for child in self.root.children:
+            if child.move == column_counter and child.Ni != 0:
+                print('Column:', child.move, ':', child.Wi/child.Ni)
+            else:
+                print('Column:', column_counter, ': NULL')
+            column_counter += 1
+    
 
-    def selectNode(self):
-        node = self.root
-        board = deepcopy(self.root_state)
+    def pmcgs_select_node(self, node): 
+        temp_board = deepcopy(self.root_board)
 
-        while len(node.children) != 0:
+        # Randomly selects node to expand
+        while not node.is_leaf():
             children = node.children
             node = random.choice(children)
-        return node, board
+            temp_board = playMove(temp_board, node.player, node.move, print_mode)
+            
+        return node, temp_board
+    
+    def pmcgs_best_move(self):
+        if len(self.root.children) == 0: 
+            return None
+        max_value = float('-inf')
+        max_move = None
+        for child in self.root.children:
+            if child.Wi/child.Ni > max_value:
+                max_value = child.Wi/child.Ni
+                max_move = child.move
+        return max_move
 
-    def expand(self,parent_node,board):
+    
+
+    def expand(self,parent_node, board):
         #check here if game is over
+        if isTerminal(board)[0]:
+            return 
+
+        child_player = 'R' if parent_node.player == 'Y' else 'Y'
+
         #Store all possible moves as children of selected node
-        children = [Node(move,parent_node) for move in possibleMoves(board)]
-        #Each depth means a different turn, assign the turn for each node
-        for child in children:
-            if child.parent.player == 'R':
-                child.player = 'Y'
-            else:
-                child.player == 'R'
-        #Add children to the selected (parent) node
-        parent_node.addChildrenNodes(children)
+        parent_node.children = [Node(move,parent_node, child_player) for move in possibleMoves(board)]
+
 
     def rollout(self,node,board):
-        game_over = isTerminal(board)
-        if game_over:
-            return board
-        
-        tempBoard = deepcopy(board)
-        while not game_over:
-            possible_moves = possibleMoves(tempBoard)
-            randomMove = random.choice(possible_moves)
-            tempBoard = playMove(board,node.player,randomMove)
-            game_over = isTerminal(tempBoard)
-        
-        return tempBoard
+        current_node_player = node.player
 
+        while not isTerminal(board)[0]:
+            random_move = random.choice(possibleMoves(board))
+            board = playMove(board, current_node_player, random_move, self.print_mode)
+            current_node_player = flipPlayer(current_node_player)
+        
+        return isTerminal(board)[1]
 
-    def back_propogate(self,node,move,winner):
-        if move is winner:
-            reward = 0
-        else:
+    def back_propogate(self, node, winner):
+        reward = 0
+        if winner == self.root.player:
+            reward = -1
+        elif winner != self.root.player and winner != 'O':
             reward = 1
 
         while node is not None:
             node.Ni += 1
             node.Wi += reward
-
-            #Check for a draw
-            if winner == '0':
-                reward = 0
-            else:
-                reward = 1 - reward
+            node = node.parent
 
 def possibleMoves(board):
     possible_moves = [i for i in range(len(board[0])) if board[0][i] == 'O']
@@ -228,7 +245,6 @@ def depthLimitedMinMaxAux(maxDepth, turn, board, print_mode="none"):
     scores = {}
     if print_mode in ["VERBOSE", "BRIEF"]:
         print(f"Depth Limited MinMax Algorithm with maxDepth={maxDepth}")
-        input()
     if print_mode == "VERBOSE":
         for row in board:
             print("\t" + " ".join(row))
@@ -251,7 +267,6 @@ def depthLimitedMinMaxAux(maxDepth, turn, board, print_mode="none"):
                 print("Move Successful")
                 for row in boardCopy:
                     print("\t" + " ".join(row))
-                input()
             isDone,winner = isTerminal(boardCopy)
             if isDone:
                 if winner == turn:
@@ -297,7 +312,7 @@ def uniformRandom(parameter, turn, board, print_mode="VERBOSE"):
         return possible_moves[0]
     raise Exception("No possible moves")
 
-def pureMonteCarloGameSearch(parameter, turn, board, print_mode="VERBOSE"):
+def pureMonteCarloGameSearch(time_limit, player, board, print_mode="VERBOSE"):
     '''
     This algorithm is the simplest form of game tree search based on randomized 
     rollouts. It is essentially the UCT algorithm without a sophisticated tree search 
@@ -315,13 +330,25 @@ def pureMonteCarloGameSearch(parameter, turn, board, print_mode="VERBOSE"):
     NODE VALUE: X” where X is -1, 0, or 1. Then print the updated values. Example in 
     Instructions.pdf
     '''
+    mcts = MCTS(board, player, print_mode)
+
+    start_time = time.time()
+    num_rollouts = 0
+
+    while time.time() - start_time < time_limit:
+        node, board = mcts.pmcgs_select_node(mcts.root)
+        mcts.expand(node, board)
+        winner = mcts.rollout(node, board)
+        mcts.back_propogate(node, winner)
+        num_rollouts += 1
     
-    monteCarlo = MCTS(board,)
+    print('Number of rollouts:', num_rollouts)
+    print('Seconds Elapsed:', time.time() - start_time)
+    mcts.print_values()
+    best_move = mcts.pmcgs_best_move()
 
-    return uniformRandom(parameter, turn, board, print_mode)
+    return best_move
 
-def simulate(node):
-    pass
 
 def upperConfidenceBound(parameter, turn, board, print_mode="VERBOSE"):
     '''
